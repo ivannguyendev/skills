@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package acme.orders.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+// OrderService manages customer orders.
+service OrderService {
+  // GetOrder returns one order by ID.
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  // ListOrders pages through a customer's orders, newest first.
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+  // CreateOrder is idempotent per request_id: a retry returns the original order.
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  // UpdateOrder changes only the fields named in update_mask.
+  rpc UpdateOrder(UpdateOrderRequest) returns (UpdateOrderResponse);
+  // WatchOrders streams changes for one customer until the client cancels.
+  rpc WatchOrders(WatchOrdersRequest) returns (stream WatchOrdersResponse);
+}
+
+// OrderStatus starts at UNSPECIFIED so an unset field is distinguishable
+// from a real state.
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING = 1;
+  ORDER_STATUS_PAID = 2;
+  ORDER_STATUS_SHIPPED = 3;
+  ORDER_STATUS_CANCELLED = 4;
+}
+
+// ChangeType says what happened to the order in a WatchOrders event.
+enum ChangeType {
+  CHANGE_TYPE_UNSPECIFIED = 0;
+  CHANGE_TYPE_CREATED = 1;
+  CHANGE_TYPE_UPDATED = 2;
+  CHANGE_TYPE_DELETED = 3;
+}
+
+// Order is the aggregate root.
+message Order {
+  // Field 9 was "notes"; reserving both stops anyone reusing them with a new
+  // meaning, which would corrupt data written by old clients.
+  reserved 9;
+  reserved "notes";
+
+  string id = 1;
+  string customer_id = 2;
+  OrderStatus status = 3;
+  repeated LineItem items = 4;
+  // Money as integer minor units: floating point loses cents.
+  int64 total_cents = 5;
+  string currency_code = 6;
+  google.protobuf.Timestamp create_time = 7;
+  google.protobuf.Timestamp update_time = 8;
+}
+
+// LineItem is one product in an order.
+message LineItem {
+  string sku = 1 [(buf.validate.field).string.min_len = 1];
+  int32 quantity = 2 [(buf.validate.field).int32.gt = 0];
+  int64 unit_price_cents = 3 [(buf.validate.field).int64.gte = 0];
+}
+
+// GetOrderRequest identifies one order.
+message GetOrderRequest {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+// GetOrderResponse wraps the order so fields can be added later.
+message GetOrderResponse {
+  Order order = 1;
+}
+
+// ListOrdersRequest uses opaque page tokens so the server can change its
+// pagination strategy without breaking clients.
+message ListOrdersRequest {
+  string customer_id = 1 [(buf.validate.field).string.min_len = 1];
+  // 0 means server default; the server caps larger values.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 100
+  }];
+  string page_token = 3;
+}
+
+// ListOrdersResponse returns one page.
+message ListOrdersResponse {
+  repeated Order orders = 1;
+  // Empty when there are no more pages.
+  string next_page_token = 2;
+}
+
+// CreateOrderRequest carries a client-generated request_id so retries are safe.
+message CreateOrderRequest {
+  string request_id = 1 [(buf.validate.field).string.uuid = true];
+  string customer_id = 2 [(buf.validate.field).string.min_len = 1];
+  repeated LineItem items = 3 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+  string currency_code = 4 [(buf.validate.field).string.len = 3];
+}
+
+// CreateOrderResponse returns the stored order.
+message CreateOrderResponse {
+  Order order = 1;
+}
+
+// UpdateOrderRequest uses a field mask so clients that don't know about new
+// fields don't erase them.
+message UpdateOrderRequest {
+  Order order = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask update_mask = 2 [(buf.validate.field).required = true];
+}
+
+// UpdateOrderResponse returns the order after the update.
+message UpdateOrderResponse {
+  Order order = 1;
+}
+
+// WatchOrdersRequest selects the customer to watch.
+message WatchOrdersRequest {
+  string customer_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+// WatchOrdersResponse is one change event.
+message WatchOrdersResponse {
+  ChangeType change_type = 1;
+  Order order = 2;
+}

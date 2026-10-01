@@ -1,0 +1,64 @@
+# Team lint policy (golangci-lint v2). Each linter beyond the standard set
+# catches a class of production bug or a review argument the team should not
+# have to repeat by hand.
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - bodyclose      # unclosed response bodies leak connections and goroutines
+    - noctx          # HTTP requests / net calls without a context
+    - fatcontext     # contexts re-wrapped in loops grow without bound
+    - errorlint      # == / type switches on wrapped errors
+    - errname        # ErrXxx sentinels, XxxError types
+    - nilerr         # returning nil after checking err != nil
+    - gosec          # security footguns (missing ReadHeaderTimeout, weak crypto, ...)
+    - sloglint       # consistent slog usage; *Context variants when a ctx exists
+    - spancheck      # spans that are never ended or never record errors
+    - exhaustive     # switches over enums must handle every value
+    - gocritic       # bug-prone and wasteful constructs
+    - revive         # naming, doc comments on exported identifiers
+    - misspell
+    - unconvert
+    - usestdlibvars  # http.MethodGet over "GET", http.StatusOK over 200
+    - perfsprint     # fmt.Sprintf where strconv / concatenation is cheaper
+    - intrange       # for i := range n
+    - modernize      # newer stdlib and language features
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment # noisy; optimize struct layout only where profiles say so
+        - shadow         # `err` shadowing is idiomatic and flagged too often
+    sloglint:
+      context: scope   # use InfoContext & co. whenever a context is in scope
+      no-mixed-args: true
+    spancheck:
+      checks: [end, record-error]
+    exhaustive:
+      default-signifies-exhaustive: true
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: context-as-argument
+        - name: error-return
+        - name: error-naming
+        - name: receiver-naming
+        - name: unused-parameter
+        - name: var-naming
+  exclusions:
+    generated: lax
+    presets: [common-false-positives, std-error-handling]
+    rules:
+      - path: _test\.go
+        linters: [gosec, noctx, revive]
+
+formatters:
+  enable: [gofmt, goimports]
+  settings:
+    goimports:
+      local-prefixes: [example.com/skeleton] # stdlib, third-party, then this module

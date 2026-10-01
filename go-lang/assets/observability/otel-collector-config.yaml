@@ -1,0 +1,57 @@
+# OpenTelemetry Collector (contrib distribution, v0.161.0).
+receivers:
+  otlp:
+    protocols:
+      # Collector receivers bind to localhost by default; a container must
+      # listen on 0.0.0.0 or nothing outside it can connect.
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # First in every pipeline: refuses data before the process runs out of memory.
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  # Tail sampling decides after seeing the whole trace, so it can keep every
+  # error and slow request and sample the rest. All spans of a trace must
+  # reach the same collector instance (use the loadbalancing exporter in
+  # front when you run more than one).
+  tail_sampling:
+    decision_wait: 10s
+    policies:
+      - name: keep-errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: keep-slow
+        type: latency
+        latency:
+          threshold_ms: 500
+      - name: sample-rest
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+  batch: {}
+
+exporters:
+  # "otlp_grpc" replaced the deprecated "otlp" exporter type name.
+  otlp_grpc/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, tail_sampling, batch]
+      exporters: [otlp_grpc/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]

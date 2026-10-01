@@ -1,0 +1,12 @@
+# Buf workspace config (v2). Run `buf dep update` once to create buf.lock.
+version: v2
+modules:
+  - path: proto
+deps:
+  - buf.build/bufbuild/protovalidate
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

@@ -1,0 +1,26 @@
+# Local tracing stack: service → OpenTelemetry Collector → Jaeger v2.
+#
+#   docker compose up -d
+#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 OTEL_EXPORTER_OTLP_INSECURE=true go run ./cmd/server
+#   open http://localhost:16686
+#
+# Image tags are pinned for reproducibility; bump them deliberately.
+name: tracing-local
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports: # loopback only: these endpoints have no auth
+      - "127.0.0.1:4317:4317" # OTLP gRPC from services
+      - "127.0.0.1:4318:4318" # OTLP HTTP from services
+    depends_on:
+      - jaeger
+
+  jaeger:
+    # Jaeger v2 is built on the Collector and ingests OTLP natively.
+    # The image sets JAEGER_LISTEN_HOST=0.0.0.0, so the collector can reach it.
+    image: jaegertracing/jaeger:2.21.0
+    ports:
+      - "127.0.0.1:16686:16686" # UI

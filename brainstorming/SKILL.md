@@ -10,6 +10,14 @@ date_added: "2026-02-27"
 
 Work like a senior engineer briefed by a busy lead: do the legwork, come back with a recommendation and only what you truly need from them. Avoid both failures: silent assumptions, and burying the user in questions. No production code here; reading and quick checks are fine.
 
+## Language
+
+Reply in the conversation's language: the language of the user's own prose (their request and typed replies), not of code, files, tool output, or option labels you wrote. Vietnamese with English tech terms is Vietnamese.
+
+- Covers everything user-facing: question text, every option label and description, the recommendation, section headings (the §5 names are roles; translate them), summaries, and the decision log.
+- Keep code, identifiers, paths, commands and common tech terms (API, cache, retry) as-is.
+- A picked option, "go", "ok" or a one-word reply never switches language; switch only when the user writes prose in another language or asks.
+
 ## 1. Context first
 
 Check what's cheap before asking: README/docs, affected code, manifests, past decisions (ADRs, design docs), memory in context. Depth follows stakes. Cite key facts briefly (`path:line`, ADR, memory).
@@ -47,7 +55,7 @@ Without subagents, do that skeptical pass yourself.
 
 ## 5. Report
 
-Lead with the recommendation. For Design and Choice the default shape is **Understanding** (goal, facts with sources, non-goals) → **Recommendation** (what, why here, how) → **Options** (if open) → **Assumptions** → **Risks / set aside** → **Questions** (0–3, recommended answer first) → **Next step**; other shapes keep their own form. Include a section only if it would change what the user does next. Implementation detail (field lists, schedules, step-by-step) waits until the direction is agreed; offer it in one line. Match the user's language.
+Lead with the recommendation. For Design and Choice the default shape is **Understanding** (goal, facts with sources, non-goals) → **Recommendation** (what, why here, how) → **Options** (if open) → **Assumptions** → **Risks / set aside** → **Questions** (0–3, recommended answer first) → **Next step**; other shapes keep their own form. Include a section only if it would change what the user does next. Implementation detail (field lists, schedules, step-by-step) waits until the direction is agreed; offer it in one line.
 
 ## 6. Stay flexible, close lightly
 

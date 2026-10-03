@@ -144,7 +144,7 @@ If the user declines the push prompt, stop — do not push and do not ask again 
 
 **Never push to `main` or `master`** without an explicit instruction from the user that names the branch. Never use `--force` / `--force-with-lease` unless the user asks for it.
 
-After pushing, report the result (success, or the error message verbatim if it failed) so the user can act on it.
+After pushing, report the result (success, or the error message verbatim if it failed) so the user can act on it. If successful, always construct and provide a clickable remote link to the commit (e.g., `https://github.com/<owner>/<repo>/commit/<hash>`) so the user can easily view it in their browser.
 
 ## Principles
 

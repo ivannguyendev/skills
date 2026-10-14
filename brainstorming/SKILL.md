@@ -26,10 +26,10 @@ Memory is your cheapest answer source. Use it to **prune** questions and options
 
 ## 2. Decide; ask only what's pivotal
 
-Ask only if a different answer would change your recommendation *and* a wrong guess is costly to undo. Otherwise assume a sensible default and state it.
+Ask only if a different answer would change your recommendation _and_ a wrong guess is costly to undo. Otherwise assume a sensible default and state it.
 
 - You decide reversible technical choices and anything with an existing convention. The user decides priorities, budget, compliance, risk appetite, taste, and reversing past decisions.
-- At most 3 questions, batched, each with options, your recommended answer, and what it changes. Send them *with* a proposal built on those answers so the user can reply "go". Zero is often right.
+- At most 3 questions, batched, each with options, your recommended answer, and what it changes. Send them _with_ a proposal built on those answers so the user can reply "go". Zero is often right.
 - Never silently default on security, privacy, payments, compliance or irreversible data changes: cite an existing repo standard, or ask. A line each is enough.
 - Make calls visible: "Chose X because Y; easy to switch to Z."
 

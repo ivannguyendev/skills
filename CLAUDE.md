@@ -1,51 +1,48 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Operational memory and engineering principles for Claude Code (and AI agents) working within this repository.
 
-## What this repo is
+## 1. Repository Purpose & Architecture
 
-A collection of Claude Code agent skills. Each top-level directory is one skill (`brainstorming`, `commit`, `docker`, `go-lang`, `websocket`). There is no root build system. The only code you can run is the Go module at `go-lang/assets/service-skeleton`.
+- **Core Identity**: This repository is a centralized collection of production-grade AI skills designed for autonomous agents (Claude Code, Antigravity, Cursor, Windsurf).
+- **Design Philosophy**: Skills are opinionated operational playbooks, hard engineering constraints, and battle-tested traps—**not** generic documentation, tutorial blogs, or boilerplate dumps.
+- **Skill Structure**: Each top-level directory represents an independent skill:
+  - `brainstorming`: Structured technical exploration, trade-off analysis, and decision logging.
+  - `commit`: Conventional Commits standard with task breakdown and branch safety.
+  - `go-lang`: High-performance Go microservices, concurrency safety, and leak prevention.
+  - `javascript`: Production Node.js & browser runtimes, event-loop lag, timeouts, and memory management.
+  - `typescript`: Honest type modeling, boundary validation, and build/compiler diagnostics.
+  - `mongo`: Schema locality, ESR index optimization, zero COLLSCAN, and pool sizing.
+  - `docker`: Secure multi-stage images, layer caching, and minimal attack surface.
+  - `websocket`: Resilient realtime connections, ping/pong heartbeats, and backpressure handling.
 
-## Skill anatomy
+## 2. Skill Authoring Standards
 
-- `SKILL.md`: YAML frontmatter with `name` and `description`, then the body. The `description` is the trigger, so it lists the tasks, the symptoms and the user phrasings (including Vietnamese) that should activate the skill. Other frontmatter fields vary: community-sourced skills (`brainstorming`, `docker`) use top-level `risk`/`source`/`date_added`, and `go-lang` uses a `metadata:` block with `version` and `tested-with`.
-- `references/*.md`: topic files loaded on demand. `SKILL.md` ends with a "load only when" map table. When you add, rename or remove a reference, update that table. Long references open with a `## Contents` section.
-- `assets/`: only compile-checked code or config that is hard to get right.
-- Body pattern: decision tables, MUST / MUST NOT rules, a traps or "corrections to outdated advice" table, and step-by-step workflows with exit gates. Prefer this to prose.
-- Keep skills lean. Their value is opinionated decisions, rules, pitfalls and verified current API facts, not large app templates. Before adding an asset or reference, check that it earns its maintenance cost.
+When adding or refactoring skills in this repository, strictly adhere to these standards:
 
-## File naming
+### Frontmatter & Trigger Design
+- Every skill entrypoint is `SKILL.md` with YAML frontmatter containing `name` and `description`.
+- The `description` acts as the semantic activation trigger for agents. It **must** detail:
+  - Core problem domains and tasks.
+  - Production symptoms (e.g., `COLLSCAN`, `100% CPU`, `memory leak`, `event-loop lag`).
+  - Common user phrasings in both **English and Vietnamese** (e.g., `tìm kiếm mờ`, `lỗi connection`, `đánh index`).
 
-- Markdown and YAML: kebab-case (`resilience-and-load.md`).
-- Go: snake_case per Go convention (`grpc_server.go`, `error_mapping_test.go`). Avoid suffixes that Go reads as build constraints (`_linux`, `_amd64`, …).
+### Body Layout & Content Rules
+- **Prefer Tables & Decision Matrices**: Use tables, MUST / MUST NOT rules, and trap corrections over prose.
+- **On-Demand Loading (`references/`)**: Detailed guides must live under `references/`. The `SKILL.md` file must contain a lookup table specifying when each reference file is loaded. Keep the root skill file compact.
+- **Lean Assets**: The `assets/` directory is reserved solely for compile-checked code, testable configs, or templates that are error-prone to recreate from scratch.
+- **File Naming**:
+  - Markdown/YAML files: `kebab-case.md` (e.g., `query-performance.md`).
+  - Code files: follow language idioms (e.g., `snake_case.go` for Go).
 
-## go-lang skeleton: commands
+## 3. Verification & Code Quality Invariants
 
-Run these from `go-lang/assets/service-skeleton`:
+- **Zero-Regressions in Assets**: Any code sample or asset provided in a skill must represent verified, production-ready code.
+  - For `go-lang/assets/service-skeleton`: Must build cleanly, pass `golangci-lint` without exceptions, and pass `go test -race` with zero goroutine leaks and allocation budgets intact.
+- **Current & Verified Tooling**: Maintain exact, tested version strings in skill metadata (e.g., Go, Node, MongoDB driver, linters). When updating recommendations, ensure breaking syntax or deprecated APIs are called out in the respective traps table.
 
-```sh
-go build ./...
-go test -race -shuffle=on ./...                      # full suite as CI runs it
-go test -race -run TestNoGoroutineLeakUnderLoad ./internal/httpserver/   # single test
-go test -run 'Allocs$' ./internal/resilience/ ./internal/httpserver/     # alloc budgets: //go:build !race, so run WITHOUT -race
-go test -bench . -run '^$' ./internal/resilience/                        # benchmarks
-go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run ./...   # golangci-lint is not installed locally
-go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-docker build -t skeleton:dev .
-```
+## 4. Agent Operating Guidelines
 
-Other assets:
-- `go-lang/assets/proto-templates`: `buf lint`, `buf breaking`, `buf generate` (buf v2 config; buf is not installed locally). The skeleton does not import the generated `gen/` code; the templates stand alone.
-- `go-lang/assets/observability`: `docker compose -f docker-compose.yaml up -d` starts a local OTel Collector (OTLP on 4317/4318) and Jaeger v2 (UI on 16686), bound to loopback.
-
-## go-lang skeleton: invariants
-
-- The skeleton must build, lint with zero issues against its own `.golangci.yaml` (golangci-lint v2), and pass `go test -race`, including the leak tests and allocation budgets. `go-lang/SKILL.md` promises all three.
-- `metadata.tested-with` in `go-lang/SKILL.md` records the verified Go, grpc-go, otel, chi, golangci-lint and buf versions. When you bump `go.mod`, update it, and update any version-specific claims in SKILL.md and the references (for example, the govulncheck note about grpc-go v1.84.0 vs v1.83.2).
-- `example.com/skeleton` is a placeholder that the rename recipe in SKILL.md ("Using the skeleton") rewrites. It also appears in `.golangci.yaml` (`goimports.local-prefixes`) and `proto-templates/buf.gen.yaml` (`go_package_prefix`). Keep all of them in sync.
-- Keep the `buf.gen.yaml` plugin versions in step with `google.golang.org/protobuf` and `google.golang.org/grpc` in `go.mod`.
-- The package map and startup flow (`main → config.validate → newServers → lifecycle`) are documented in the "Using the skeleton" section of `go-lang/SKILL.md`. Update that section when the layout changes.
-
-## Commits
-
-Use `commit/SKILL.md`: Conventional Commits with this repo's types (`ref` for refactors, `update` for small content changes), a bulleted body, and no AI attribution lines. It refuses to commit on `main`/`master` unless the user explicitly says so.
+- **Language Policy**: Respond in the user's conversation language. When the user writes in Vietnamese, reply in Vietnamese with standard English technical terms (API, goroutine, index, cache, retry...).
+- **Minimal Back-and-Forth**: Act like a senior engineer briefed by a lead—read code/skills first, formulate a strong recommendation, explain assumptions clearly, and ask only pivotal questions if choices are irreversible.
+- **Git & Commits**: Always invoke and adhere to `commit/SKILL.md`. Use Conventional Commits (`feat`, `fix`, `ref`, `docs`, `update`), generate concise bullet-point summaries, and never commit directly to `main`/`master` without explicit user confirmation.
